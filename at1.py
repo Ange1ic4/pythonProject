@@ -53,6 +53,3 @@ while len(seta) == 1:
 
     seta = navegador.find_elements('id', 'rcmbtnnavlast')
 
-time.sleep(5)
-print()
-print()
