@@ -14,7 +14,7 @@ def aguarda_elemento(tipo, id):
 
 def wait_load(navegador):
     while True:
-        loading = navegador.find_elements('class name', 'loading')
+        loading = navegador.find_elements('xpath', '/html/body/div[3]/div/div[2]/div')
         if len(loading) > 0:
             try:
                 loading[0].is_displayed()
@@ -31,61 +31,75 @@ navegador = webdriver.Chrome()
 # Entrar no site
 navegador.get('https://cpe.web.stj.jus.br/#/')
 
+navegador.find_element('xpath', '//*[@id="app"]/div/div[2]/div[1]/div[1]/button').click()
+
+aguarda_elemento('id', "q")
+
 processos = ("00008437020158210133", "10036986220208260077",  "81681311220228050001", "10858905120188260100")
 
 for processo in processos:
 
-    goback = navegador.find_elements('xpath', "/html/body/a")
-    if len(goback) != 0:
-        navegador.close()
-
-        navegador = webdriver.Chrome()
-
-        # Entrar no site
-        navegador.get('https://processo.stj.jus.br/processo/pesquisa/?aplicacao=processos.ea')
-
-    aguarda_elemento('id', "idBotaoPesquisarFormularioExtendido")
-
     # Preencher o número do processo
-    navegador.find_element('id', "idNumeroUnico").send_keys(processo)
+    navegador.find_element('id', "q").send_keys(processo)
 
     # Clicar em pesquisar
-    navegador.find_element('id', "idBotaoPesquisarFormularioExtendido").click()
+    navegador.find_element('id', "search-btn").click()
 
-    nprocesso = navegador.find_elements('id', "idSpanAbaDetalhes")
+    wait_load(navegador)
 
-    if len(nprocesso) == 0:
-        navegador.find_element('id', "idBotaoFormularioExtendidoNovaConsulta").click()
+    nao_encontrado = navegador.find_elements('xpath', '//*[@id="app"]/div/div[2]/div')
+
+    #Processo não encontrado
+    if len(nao_encontrado) != 0:
         print("NENHUM PROCESSO ENCONTRADO.")
+        navegador.find_element('xpath', '/html/body/div/div/div[2]/div/div/div[3]/button').click()
+        #informe = navegador.find_elements('xpath', '//*[@id="app"]/div/div[2]/div')
+
+        #if len(informe) != 0:
+
+         #   navegador.find_element('xpath', '//*[@id="app"]/div/div[2]/div/div/div[3]/button').click()
         continue
 
+    # Cabeçalho
+    numprocesso = navegador.find_elements('xpath', '//*[@id="app"]/div/div[1]/div/div/div[1]/div/div[1]/div[1]/div/h3/span')
+    detalhes = navegador.find_elements('xpath', '/html/body/div/div/div[1]/div/div/div[1]/div/div[1]/div[2]/table')
+
+    print("Cabeçalho")
+    for num in numprocesso:
+        print(num.text)
+
+    for det in detalhes:
+        print(det.text)
+        print('\n')
+
+    #abas = navegador.find_elements('tag name', 'li')
+    #print(len(abas))
+
     # Encontrar o Recorrente
-    titulos = navegador.find_elements('class name', "classSpanDetalhesLabel")
 
-    conteudos = navegador.find_elements('class name', "classSpanDetalhesTexto")
+    #Fases do processo
 
-    for titulo, conteudo in zip(titulos, conteudos):
-        a = titulo.text
-        b = conteudo.text
-        if (a == "RECORRENTE:"):
-            print(a, b)
-        if (a == "RECORRIDO :"):
-            print(a, b)
-        if (a == "ADVOGADO:"):
-            print(a, b)
-        if (a == "AUTUAÇÃO:"):
-            print(a, b)
+    navegador.execute_script('tabs = document.getElementsByClassName("tab-pane"); for (const tab of tabs) {tab.classList.remove("active"); }; document.getElementById("tabFases").classList.add("active");')
 
+    fases = navegador.find_elements('xpath', '/html/body/div/div/div[1]/div/div/div[1]/div/div[2]/div/div/div/div/div[2]/div')
 
-    navegador.find_element('id', "idSpanAbaFases").click()
+    print("Fases")
+    for fase in fases:
+        print(fase.text)
 
-    fase = navegador.find_elements('class name', "classDivFaseLinha")
+    print("\n")
+    navegador.execute_script('tabs = document.getElementsByClassName("tab-pane"); for (const tab of tabs) {tab.classList.remove("active"); }; document.getElementById("tabPartes").classList.add("active");')
 
-    for etapa in fase:
-        print(etapa.text)
+    partadvs = navegador.find_elements('xpath', '/html/body/div/div/div[1]/div/div/div[1]/div/div[2]/div/div/div/div/div[4]/div/table')
 
-    navegador.find_element('id', "idBotaoFormularioExtendidoNovaConsulta").click()
+    print("Partes/Advogados")
+    for partadv in partadvs:
+        print(partadv.text)
 
+    print('\n')
+
+    time.sleep(5)
+    navegador.find_element('id', "q").clear()
 
 print()
 time.sleep(5)
