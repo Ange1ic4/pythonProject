@@ -59,6 +59,7 @@ class Processo:
         #for partadv in partadvs:
          #   print(partadv.text)
 
+# Abrir navegador
 navegador = webdriver.Chrome()
 
 # Entrar no site
