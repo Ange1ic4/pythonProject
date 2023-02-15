@@ -1,5 +1,6 @@
 from datetime import datetime, date
 from selenium import webdriver
+from selenium.common import ElementNotInteractableException, StaleElementReferenceException
 from selenium.webdriver.remote.webelement import WebElement
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.service import Service
@@ -39,7 +40,7 @@ class Processo:
         self.aguarda_elemento('xpath', '//*[@id="validadeCertificadoModalhidelink"]')
 
     def segundosite(self):
-        processos = ("08078097420174058200", "08090663720174058200", "08997543520204058201", "08007543520184058201")
+        processos = ("08078097420174058200", "08090663720174058200", "08997543520204058201", "08007543520184058201", "00001376720235130008", "00000493820235130005", "08345348520228152001", "08063404120238152001", "00021824920224058200")
         self.navegador.get('https://pje.jfpb.jus.br/pje/Processo/ConsultaProcessoTerceiros/listView.seam')
 
         self.wait_invertido('xpath', '//*[@id="validadeCertificadoModalhidelink"]')
@@ -53,13 +54,15 @@ class Processo:
 
             self.wait_load('xpath', '//*[@id="modalStatusContentTable"]/tbody/tr/td')
 
-            detalhes = self.navegador.find_elements('id', 'consultaProcessoTerceirosList:0:j_id271:j_id274')
+            detalhes = self.navegador.find_elements('xpath', '//*[@id="consultaProcessoTerceirosList:0:j_id271:j_id274"]/img')
 
             if len(detalhes) == 0:
                 self.naoencontrados.append(processo)
                 continue
 
-            self.navegador.execute_script("document.getElementById('consultaProcessoTerceirosList:0:j_id271:j_id274').click();")
+            self.wait_to_be_interectable('xpath', '//*[@id="consultaProcessoTerceirosList:0:j_id271:j_id274"]/img')
+
+            self.navegador.find_element('xpath', '//*[@id="consultaProcessoTerceirosList:0:j_id271:j_id274"]/img').click()
 
             self.navegador.execute_script('document.getElementById("modal:motivacaoDecoration:motivacao").innerHTML = "Consulta processual"; ')
 
@@ -72,6 +75,8 @@ class Processo:
             self.aguarda_elemento('id', 'j_id845:j_id846')
             self.navegador.close()
             self.navegador.switch_to.window(self.navegador.window_handles[0])
+
+        print(self.naoencontrados)
 
     def terceirosite(self):
 
@@ -143,6 +148,16 @@ class Processo:
             except:
                 continue
 
+    def wait_to_be_interectable(self, tipo, id):
+        while True:
+            try:
+                element = self.navegador.find_elements(tipo, id)
+                element[0].click()
+                break
+            except ElementNotInteractableException:
+                pass
+            except StaleElementReferenceException:
+                pass
 
 p = Processo()
 p.primeirosite()
