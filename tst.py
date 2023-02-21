@@ -5,6 +5,7 @@ from selenium.webdriver.remote.webelement import WebElement
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.action_chains import ActionChains
 
 import time
 
@@ -14,52 +15,82 @@ class Processo:
     def __init__(self):
         self.navegador = webdriver.Chrome()
         self.naoencontrados = []
-        self.processos = ("01000266720185010019", "01001331220185010343", "01003293620185010000", "01003293720185010066")
+        self.processos = ["0100026-67.2018.5.01.0019", "0100133-12.2018.5.01.0343", "0100329-36.2018.5.01.0000", "0100329-37.2018.5.01.0066"]
 
-    def entrar_tst(self):
-        self.navegador.get('http://aplicacao4.tst.jus.br/consultaProcessual/consultaTstNumUnica.do')
+    def entrar_tst_sem_captcha(self):
+        # Entrar no site
+
+        self.navegador.get('https://aplicacao3.tst.jus.br/visualizacaoAutos/Iniciar.pub?load=1')
+
+        # Acessar consulta
+        pesquisar = self.navegador.find_element('xpath', '//*[@id="menu"]/ul/li[2]/span/a')
+
+        ActionChains(self.navegador).move_to_element(pesquisar).perform()
+
+        self.navegador.find_element('xpath', '//*[@id="menu"]/ul/li[2]/ul/li/a').click()
 
         for processo in self.processos:
-            self.navegador.find_element('xpath', '//*[@id="consultaTstNumUnica:numeroTst"]').send_keys(processo)
 
-            #Consultar
-            self.navegador.find_element('xpath', '/html/body/table/tbody/tr[3]/td/table/tbody/tr[3]/td/form/table/tbody/tr[2]/td[2]/input[2]').click()
+            partes = processo.split("-")
 
-            #RECAPCHA (pode ter)
+            partes_2 = partes[1].split(".")
 
-            self.carrega_pagina('class name', 'historicoProcesso', 'xpath', '/html/body/table[2]/tbody/tr[3]/td/table/tbody/tr[2]/td/form/center/font/b')
+            self.navegador.find_element('xpath', '//*[@id="consultaProcessoForm"]/form/table/tbody/tr/td[2]/table/tbody/tr[2]/td[1]/input').send_keys(partes[0])
 
-            nprocesso = self.navegador.find_elements('xpath', '/html/body/table[2]/tbody/tr[3]/td/table/tbody/tr[2]/td/form/center/font/b')
+            self.navegador.find_element('xpath', '//*[@id="consultaProcessoForm"]/form/table/tbody/tr/td[2]/table/tbody/tr[2]/td[2]/input').send_keys(partes_2[0])
 
-            if len(nprocesso) > 0:
-                # Retornar à pesquisa
-                self.navegador.find_element('xpath', '/html/body/table[2]/tbody/tr[3]/td/table/tbody/tr[1]/td/table/tbody/tr/td/a[1]/img').click()
+            self.navegador.find_element('xpath', '//*[@id="consultaProcessoForm"]/form/table/tbody/tr/td[2]/table/tbody/tr[2]/td[3]/input').send_keys(partes_2[1])
 
-                #RECAPTCHA (pode ter)
-                self.aguarda_elemento('xpath', '//*[@id="consultaTstNumUnica:numeroTst"]') # Aguarda aparecer "Numero do processo"
+            self.navegador.find_element('xpath', '//*[@id="consultaProcessoForm"]/form/table/tbody/tr/td[2]/table/tbody/tr[2]/td[4]/input').send_keys(partes_2[2])
 
-                #Limpar pesquisa para não repetir o mesmo Processo
-                self.navegador.find_element('xpath', '/html/body/table/tbody/tr[3]/td/table/tbody/tr[3]/td/form/table/tbody/tr[2]/td[2]/input[3]').click()
+            self.navegador.find_element('xpath', '//*[@id="consultaProcessoForm"]/form/table/tbody/tr/td[2]/table/tbody/tr[2]/td[5]/input').send_keys(partes_2[3])
+
+            self.navegador.find_element('xpath', '//*[@id="consultaProcessoForm"]/form/table/tbody/tr/td[2]/table/tbody/tr[2]/td[6]/input').send_keys(partes_2[4])
+
+            self.navegador.find_element('xpath', '//*[@id="botaoConsultar"]').click()
+
+            consultar = self.navegador.find_elements('xpath', '//*[@id="botaoConsultar"]')
+
+            # Consultar (quando o resultado devolve um resultado
+
+            consultar_ok = self.navegador.find_elements('xpath', '//*[@id="resultadoProcessos"]/tbody/tr/td[3]/a')
+
+            if len(consultar_ok) == 0:
+                self.navegador.find_element('xpath', '//*[@id="botaoLimpar"]').click()
+                print("Nenhum processo \n")
+
                 continue
 
-            linhas = self.navegador.find_elements('class name', 'dadosProcesso')
+            #nprocesso = self.navegador.find_elements('xpath', '/html/body/table[2]/tbody/tr[3]/td/table/tbody/tr[2]/td/form/center/font/b')
 
-            hisprocesso = self.navegador.find_elements('class name', 'historicoProcesso')
+            if len(consultar) > 0:
+                # Consultar
+                self.navegador.find_element('xpath', '//*[@id="resultadoProcessos"]/tbody/tr/td[3]/a').click()
 
-            for linha in linhas:
-                print(linha.text)
+                self.navegador.switch_to.window(self.navegador.window_handles[1])
 
-            print("Histórico do processo:")
+                self.aguarda_elemento('class name', 'historicoProcesso')
 
-            for h in hisprocesso:
-                print(h.text)
+                linhas = self.navegador.find_elements('class name', 'dadosProcesso')
 
-            #Voltar para pesquisa
-            self.navegador.find_element('xpath', '/html/body/table/tbody/tr[3]/td/table/tbody/tr[1]/td/table/tbody/tr/td/a[1]/img').click()
+                hisprocesso = self.navegador.find_elements('class name', 'historicoProcesso')
 
-            #RECAPTCHA
+                for linha in linhas:
+                    print(linha.text)
 
-            self.aguarda_elemento('xpath', '//*[@id="consultaTstNumUnica:numeroTst"]')
+                print("Histórico do processo:")
+
+                for h in hisprocesso:
+                    print(h.text)
+
+                print("Fim\n")
+                self.navegador.close()
+
+                self.navegador.switch_to.window(self.navegador.window_handles[0])
+
+                self.navegador.find_element('xpath', '//*[@id="botaoLimpar"]').click()
+
+                continue
 
 
     def aguarda_elemento(self, tipo, id):
@@ -95,4 +126,4 @@ class Processo:
 
 
 p = Processo()
-p.entrar_tst()
+p.entrar_tst_sem_captcha()
